@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wheel of Dreams — STEM Careers Edition</title>
+<meta name="description" content="Wheel of Dreams: an interactive trivia game about STEM careers. Spin the wheel, guess consonants, buy vowels, and solve the puzzle to win!">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#ffd700; --gold-dark:#b8860b; --red:#d32f2f; --navy:#0a1a3f;
+  --blue:#1a3a8f; --light:#fdf6e3; --teal:#0e7c66; --green:#2e7d32;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Roboto',sans-serif;
+  background:radial-gradient(circle at 20% 0%, #1a3a8f, #0a1a3f 70%);
+  color:#fff;min-height:100vh;overflow-x:hidden;
+}
+.hidden{display:none!important;}
+button{font-family:'Roboto',sans-serif;cursor:pointer;}
+
+/* ===== Header ===== */
+header{
+  background:linear-gradient(180deg,#b8860b,#ffd700 55%,#b8860b);
+  color:#0a1a3f;padding:12px 20px;display:flex;align-items:center;
+  justify-content:space-between;flex-wrap:wrap;gap:10px;
+  box-shadow:0 4px 15px rgba(0,0,0,.5);
+}
+header .logo{font-family:'Bebas Neue',cursive;font-size:2.2rem;letter-spacing:3px;text-shadow:2px 2px 0 rgba(255,255,255,.5);}
+header .tagline{font-weight:700;font-size:.95rem;opacity:.9;}
+header .scores{display:flex;gap:12px;flex-wrap:wrap;}
+.score-chip{background:#0a1a3f;color:#ffd700;padding:6px 14px;border-radius:20px;font-weight:700;font-size:.9rem;}
+
+/* ===== Layout ===== */
+main{max-width:1100px;margin:0 auto;padding:16px;}
+h2{font-family:'Bebas Neue',cursive;letter-spacing:2px;font-size:1.8rem;color:#ffd700;margin-bottom:10px;}
+.card{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.15);border-radius:14px;padding:18px;margin-bottom:18px;}
+
+/* ===== Wheel ===== */
+#wheel-section{display:flex;flex-direction:column;align-items:center;}
+.wheel-wrap{position:relative;width:min(90vw,460px);aspect-ratio:1;margin-bottom:8px;}
+#wheelCanvas{width:100%;height:100%;filter:drop-shadow(0 8px 20px rgba(0,0,0,.6));}
+.wheel-pointer{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;
+  border-top:38px solid #ffd700;z-index:5;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));
+}
+.wheel-pointer::after{content:'';position:absolute;top:-44px;left:-12px;width:24px;height:24px;background:#ffd700;border-radius:50%;border:3px solid #0a1a3f;}
+#wheelValue{font-family:'Bebas Neue',cursive;font-size:2.4rem;color:#ffd700;min-height:3.2rem;text-align:center;}
+
+/* ===== Puzzle board ===== */
+#category{text-align:center;font-size:1.1rem;letter-spacing:2px;color:#ffd700;text-transform:uppercase;margin-bottom:14px;}
+#roundInfo{text-align:center;font-size:.95rem;color:#a8dadc;margin-bottom:6px;}
+#puzzle{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:16px;}
+.tile{
+  width:46px;height:56px;background:#fff;color:#0a1a3f;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',cursive;font-size:2rem;font-weight:700;
+  box-shadow:0 3px 6px rgba(0,0,0,.4);transition:transform .15s;
+}
+.tile.revealed{background:var(--gold);color:#0a1a3f;}
+.tile.space{background:transparent;box-shadow:none;}
+
+/* ===== Controls ===== */
+#controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;}
+.btn{
+  background:var(--gold);color:#0a1a3f;border:none;padding:12px 18px;border-radius:8px;
+  font-weight:700;font-size:1rem;letter-spacing:.5px;
+  box-shadow:0 4px 0 var(--gold-dark);transition:all .1s;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn:active{transform:translateY(3px);box-shadow:none;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn.red{background:var(--red);box-shadow:0 4px 0 #8f1f1f;color:#fff;}
+.btn.green{background:var(--green);box-shadow:0 4px 0 #1b5e20;color:#fff;}
+.btn.teal{background:var(--teal);box-shadow:0 4px 0 #0a5c4b;color:#fff;}
+.letter-pad{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px;max-width:520px;margin-left:auto;margin-right:auto;}
+.letter{
+  width:40px;height:44px;border-radius:6px;border:2px solid #ffd700;background:rgba(255,255,255,.1);
+  color:#fff;font-weight:700;font-size:1.05rem;transition:all .1s;
+}
+.letter:hover:not(:disabled){background:#ffd700;color:#0a1a3f;}
+.letter:disabled{opacity:.25;cursor:default;border-color:#666;background:transparent;color:#888;}
+
+/* ===== Message / Toast ===== */
+#message{min-height:2.2rem;text-align:center;font-weight:700;font-size:1.15rem;margin:12px 0;color:#ffd700;}
+.toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;
+  background:var(--gold);color:#0a1a3f;padding:14px 28px;border-radius:30px;font-weight:700;font-size:1.1rem;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);transition:opacity .4s, transform .4s;max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast:not(.show){opacity:0;transform:translateX(-50%) translateY(-30px);pointer-events:none;}
+
+/* ===== Players table ===== */
+#players{width:100%;border-collapse:collapse;margin-top:10px;}
+#players th,#players td{padding:10px;text-align:center;border:1px solid rgba(255,255,255,.2);}
+#players th{background:rgba(255,255,255,.1);color:#ffd700;font-family:'Bebas Neue',cursive;letter-spacing:2px;}
+#players td.active{background:rgba(255,215,0,.15);outline:2px solid #ffd700;}
+#players .name{font-weight:700;}
+.bonus{color:#7cff9b;font-weight:700;}
+
+/* ===== Rules ===== */
+#rules ol{padding-left:20px;line-height:1.9;}
+#rules li{margin-bottom:4px;}
+.wedge-chip{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:.85rem;margin:2px;}
+.w-bankrut{background:var(--red);color:#fff;}
+.w-lose{background:#555;color:#fff;}
+.w-free{background:var(--teal);color:#fff;}
+.w-prize{background:#ff8c00;color:#fff;}
+.w-jackpot{background:#9c27b0;color:#fff;}
+
+/* ===== Winner modal ===== */
+#winModal{
+  position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:200;
+}
+.win-box{
+  background:linear-gradient(160deg,#0a1a3f,#1a3a8f);border:3px solid var(--gold);border-radius:20px;
+  padding:40px;text-align:center;max-width:520px;width:90%;
+}
+.win-box h1{font-family:'Bebas Neue',cursive;font-size:3.5rem;color:var(--gold);letter-spacing:2px;}
+.win-box p{font-size:1.2rem;margin:16px 0;}
+.confetti{position:fixed;top:-20px;width:10px;height:14px;z-index:300;pointer-events:none;}
+
+/* ===== Footer ===== */
+footer{text-align:center;padding:20px;color:rgba(255,255,255,.5);font-size:.85rem;}
+footer a{color:#ffd700;}
+
+/* ===== Responsive ===== */
+@media(max-width:520px){
+  header .logo{font-size:1.6rem;}
+  .tile{width:34px;height:42px;font-size:1.5rem;}
+  .letter{width:32px;height:38px;font-size:.9rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <div>
+    <div class="logo">🎡 WHEEL OF DREAMS</div>
+    <div class="tagline">STEM Careers Edition — solve the puzzle & win prizes!</div>
+  </div>
+  <div class="scores" id="headerScores"></div>
+</header>
+
+<main>
+  <!-- ===== WHEEL ===== -->
+  <section class="card" id="wheel-section">
+    <h2>Spin the Wheel</h2>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <canvas id="wheelCanvas"></canvas>
+    </div>
+    <div id="wheelValue">—</div>
+    <div id="controls">
+      <button class="btn green" id="btnSpin" onclick="spin()">SPIN WHEEL 🎡</button>
+      <button class="btn" id="btnSolve" onclick="openSolve()">SOLVE PUZZLE 💡</button>
+      <button class="btn teal" id="btnBuy" onclick="buyVowel()">BUY VOWEL (‑10)</button>
+      <button class="btn red" id="btnNew" onclick="newGame()">NEW GAME</button>
+    </div>
+  </section>
+
+  <!-- ===== PUZZLE ===== -->
+  <section class="card">
+    <div id="roundInfo">Round 1 of 25</div>
+    <div id="category">—</div>
+    <div id="puzzle"></div>
+    <div id="message"></div>
+    <div class="letter-pad" id="letterPad"></div>
+  </section>
+
+  <!-- ===== PLAYERS ===== -->
+  <section class="card">
+    <h2>Contestants</h2>
+    <table id="players">
+      <thead><tr><th>Name</th><th>Score</th><th>Last Wheel</th><th>Surprise Prizes</th></tr></thead>
+      <tbody id="playerRows"></tbody>
+    </table>
+    <p style="margin-top:10px;color:rgba(255,255,255,.7);font-size:.9rem;">Click a contestant's name to switch whose turn it is (auto-advances for a single player).</p>
+  </section>
+
+  <!-- ===== RULES ===== -->
+  <section class="card" id="rules">
+    <h2>How to Play</h2>
+    <ol>
+      <li><b>Spin the wheel</b> first to start your turn.</li>
+      <li>Guess <b>one consonant</b>. If it's in the puzzle, your score increases by <b>wedge value × number of that letter</b>.</li>
+      <li>If the consonant isn't there, <b>your turn passes</b> to the next contestant.</li>
+      <li>Want to <b>buy a vowel</b>? It costs <b>10 points</b> (only after the wheel has been spun).</li>
+      <li><span class="wedge-chip w-bankrut">BANKRUPT</span> — lose your turn and your score resets to 0.</li>
+      <li><span class="wedge-chip w-lose">LOSE A TURN</span> — turn passes, score unchanged.</li>
+      <li><span class="wedge-chip w-free">FREE SPIN</span> — get one free spin after a correct consonant guess.</li>
+      <li><span class="wedge-chip w-prize">SURPRISE / GIFT BOX</span> — an extra prize, but only if you solve the round.</li>
+      <li><span class="wedge-chip w-jackpot">JACKPOT</span> — a big prize; solve the puzzle immediately to claim it.</li>
+      <li>You have <b>5 seconds</b> to think. Solve the full puzzle with <b>SOLVE PUZZLE</b> to win!</li>
+    </ol>
+    <p style="margin-top:10px;color:#a8dadc;"><b>🧬 About the questions:</b> 25 puzzles, all about <b>STEM careers</b> — jobs in Science, Technology, Engineering, Mathematics, and Health & Medicine.</p>
+  </section>
+</main>
+
+<footer>
+  A fan-made tribute to <b>Roda Impian</b> (SCTV, 2001–2002, host Charles Bonar Sirait), inspired by Merv Griffin's <i>Wheel of Fortune</i>. Made locally for learning & fun. <b>STEM Careers Edition</b>.
+</footer>
+
+<!-- Winner Modal -->
+<div id="winModal" class="hidden">
+  <div class="win-box">
+    <h1 id="winTitle">🏆</h1>
+    <p id="winMsg"></p>
+    <button class="btn" onclick="newGame()">Play Again</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   WHEEL OF DREAMS — STEM Careers Edition
+   25 puzzles about STEM jobs. English UI.
+   Faithful Wheel-of-Fortune style rules (Roda Impian / SCTV 2001).
+   ============================================================ */
+
+// ---------- 25 STEM Career Puzzles ----------
+const PUZZLE_POOL = [
+  // Science
+  {category:'Science', solution:'BIOLOGIST'},
+  {category:'Science', solution:'CHEMIST'},
+  {category:'Science', solution:'PHYSICIST'},
+  {category:'Science', solution:'ASTRONOMER'},
+  {category:'Science', solution:'GEOLOGIST'},
+  // Technology
+  {category:'Technology', solution:'SOFTWARE ENGINEER'},
+  {category:'Technology', solution:'DATA SCIENTIST'},
+  {category:'Technology', solution:'CYBERSECURITY ANALYST'},
+  {category:'Technology', solution:'AI ENGINEER'},
+  {category:'Technology', solution:'CLOUD ARCHITECT'},
+  // Engineering
+  {category:'Engineering', solution:'MECHANICAL ENGINEER'},
+  {category:'Engineering', solution:'ELECTRICAL ENGINEER'},
+  {category:'Engineering', solution:'CIVIL ENGINEER'},
+  {category:'Engineering', solution:'AEROSPACE ENGINEER'},
+  {category:'Engineering', solution:'ROBOTICS ENGINEER'},
+  // Mathematics
+  {category:'Mathematics', solution:'STATISTICIAN'},
+  {category:'Mathematics', solution:'DATA ANALYST'},
+  {category:'Mathematics', solution:'ACTUARY'},
+  {category:'Mathematics', solution:'CRYPTOGRAPHER'},
+  {category:'Mathematics', solution:'QUANTITATIVE ANALYST'},
+  // Health & Medicine
+  {category:'Health & Medicine', solution:'NEUROSCIENTIST'},
+  {category:'Health & Medicine', solution:'BIOMEDICAL ENGINEER'},
+  {category:'Health & Medicine', solution:'GENETICIST'},
+  {category:'Health & Medicine', solution:'PHARMACIST'},
+  {category:'Health & Medicine', solution:'EPIDEMIOLOGIST'}
+];
+
+const WEDGES = [
+  {label:'500', value:500},{label:'BANKRUPT', value:0, type:'bankrut'},
+  {label:'300', value:300},{label:'FREE SPIN', value:0, type:'free'},
+  {label:'900', value:900},{label:'LOSE A TURN', value:0, type:'lose'},
+  {label:'700', value:700},{label:'SURPRISE', value:0, type:'prize', prize:'Surprise Prize'},
+  {label:'550', value:550},{label:'GIFT BOX', value:0, type:'prize', prize:'Gift Box'},
+  {label:'800', value:800},{label:'JACKPOT', value:0, type:'jackpot'},
+  {label:'650', value:650},{label:'450', value:450},
+  {label:'1000', value:1000},{label:'350', value:350}
+];
+const VOWELS = ['A','I','U','E','O'];
+const ALL_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const CONSONANTS = ALL_LETTERS.filter(l=>!VOWELS.includes(l));
+
+// ---------- State ----------
+let players = [];
+let currentPlayer = 0;
+let puzzle = null;        // {text, category, solution, revealed[]}
+let round = 1;
+let wheelRotation = 0;
+let spinning = false;
+let canGuess = false;
+let guessedLetters = new Set();
+let freeSpin = 0;
+let lastWedge = null;
+let puzzleQueue = [];
+
+// ---------- Queue of 25 puzzles (no repeats until all used) ----------
+function buildQueue(){
+  puzzleQueue = [...PUZZLE_POOL];
+  for(let i=puzzleQueue.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [puzzleQueue[i],puzzleQueue[j]]=[puzzleQueue[j],puzzleQueue[i]];
+  }
+}
+function pickPuzzle(){
+  if(puzzleQueue.length===0) buildQueue();
+  const p = puzzleQueue.pop();
+  return {category:p.category, solution:p.solution, revealed:Array(p.solution.length).fill(false)};
+}
+
+// ---------- Player setup ----------
+function initPlayers(){
+  players = ['Player 1','Player 2','Player 3'].map(n=>({name:n,score:0,lastWedge:'—',prizes:[]}));
+  currentPlayer = 0;
+  renderPlayers(); renderHeaderScores();
+}
+
+// ---------- Puzzle ----------
+function renderPuzzle(){
+  const el = document.getElementById('puzzle');
+  el.innerHTML='';
+  for(let i=0;i<puzzle.solution.length;i++){
+    const ch = puzzle.solution[i];
+    const tile=document.createElement('div');
+    if(ch===' '){tile.className='tile space';}
+    else{
+      tile.className='tile'+(puzzle.revealed[i]?' revealed':'');
+      tile.textContent = puzzle.revealed[i]? ch : '';
+    }
+    el.appendChild(tile);
+  }
+  document.getElementById('category').textContent='Category: '+puzzle.category;
+  document.getElementById('roundInfo').textContent='Round '+round+' of 25';
+}
+function isSolved(){
+  for(let i=0;i<puzzle.solution.length;i++){
+    const ch=puzzle.solution[i];
+    if(ch!==' ' && !puzzle.revealed[i]) return false;
+  }
+  return true;
+}
+
+// ---------- Wheel ----------
+const canvas=document.getElementById('wheelCanvas');
+const ctx=canvas.getContext('2d');
+function resizeCanvas(){
+  const s=canvas.clientWidth;
+  canvas.width=s*devicePixelRatio; canvas.height=s*devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+function drawWheel(){
+  const size=canvas.clientWidth; const cx=size/2, cy=size/2, r=size/2-6;
+  const n=WEDGES.length; const step=2*Math.PI/n;
+  ctx.clearRect(0,0,size,size);
+  const colors=['#e63946','#1d3557','#f4a261','#2a9d8f','#e76f51','#457b9d','#a8dadc','#f4a261'];
+  for(let i=0;i<n;i++){
+    const start=wheelRotation+i*step;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+step); ctx.closePath();
+    ctx.fillStyle=colors[i%colors.length];
+    if(WEDGES[i].type==='jackpot') ctx.fillStyle='#9c27b0';
+    else if(WEDGES[i].type==='bankrut') ctx.fillStyle='#b91c1c';
+    ctx.fill(); ctx.strokeStyle='#0a1a3f'; ctx.lineWidth=2; ctx.stroke();
+    const mid=start+step/2;
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(mid); ctx.translate(r*0.62,0);
+    ctx.rotate(Math.PI/2);
+    ctx.fillStyle='#fff'; ctx.font='bold '+(size*0.033)+'px Roboto';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(WEDGES[i].label,0,0);
+    ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(cx,cy,r*0.14,0,2*Math.PI); ctx.fillStyle='#ffd700'; ctx.fill();
+  ctx.strokeStyle='#0a1a3f'; ctx.lineWidth=3; ctx.stroke();
+}
+function wedgeAtPointer(){
+  const n=WEDGES.length; const step=2*Math.PI/n;
+  const pointerAngle = -Math.PI/2;
+  let best=0,bestD=1e9;
+  for(let i=0;i<n;i++){
+    const a=wheelRotation+i*step+step/2;
+    let d=Math.abs(a-pointerAngle); d=d%(2*Math.PI); if(d>Math.PI)d=2*Math.PI-d;
+    if(d<bestD){bestD=d;best=i;}
+  }
+  return best;
+}
+function spin(){
+  if(spinning) return;
+  canGuess=false; lastWedge=null;
+  document.getElementById('btnBuy').disabled=true;
+  enableLetters(false);
+  showMsg('');
+  const target = wheelRotation + (5+Math.random()*8)*2*Math.PI;
+  const start=wheelRotation;
+  const duration=2800; const t0=performance.now();
+  spinning=true;
+  disableMainButtons();
+  function anim(t){
+    const p=Math.min(1,(t-t0)/duration);
+    const ease=1-Math.pow(1-p,3);
+    wheelRotation=start+(target-start)*ease;
+    drawWheel();
+    if(p<1){requestAnimationFrame(anim);}
+    else{ finishSpin(); }
+  }
+  requestAnimationFrame(anim);
+}
+function finishSpin(){
+  spinning=false;
+  const idx=wedgeAtPointer();
+  const w=WEDGES[idx];
+  lastWedge=w;
+  players[currentPlayer].lastWedge=w.label;
+  renderPlayers();
+  enableMainButtons();
+  if(w.type==='bankrut'){
+    players[currentPlayer].score=0;
+    players[currentPlayer].prizes=[];
+    renderPlayers(); renderHeaderScores();
+    showMsg('💥 BANKRUPT! '+players[currentPlayer].name+'\'s score resets to 0. Turn passes.');
+    nextPlayer(); return;
+  }
+  if(w.type==='lose'){
+    showMsg('😴 LOSE A TURN. Turn passes, score unchanged.');
+    nextPlayer(); return;
+  }
+  if(w.type==='jackpot'){
+    freeSpin=0;
+    setWheelValue('🎰 JACKPOT! Solve the puzzle NOW for a big prize!');
+    canGuess=true; enableLetters(true); enableBuy();
+    showMsg('🎰 '+players[currentPlayer].name+' hit the JACKPOT! Guess a letter or solve the puzzle!');
+    return;
+  }
+  if(w.type==='free'){
+    freeSpin=1;
+    setWheelValue('🔄 FREE SPIN');
+    showMsg('🔄 FREE SPIN! Guess 1 consonant correctly, then get a free spin.');
+    canGuess=true; enableLetters(true);
+    return;
+  }
+  if(w.type==='prize'){
+    freeSpin=0;
+    players[currentPlayer].prizes.push(w.prize);
+    renderPlayers();
+    setWheelValue('🎁 '+w.prize+'!');
+    showMsg('🎁 '+players[currentPlayer].name+' wins '+w.prize+'! Guess a consonant to continue.');
+    canGuess=true; enableLetters(true); enableBuy();
+    return;
+  }
+  freeSpin=0;
+  setWheelValue('💰 '+w.value+' points');
+  showMsg('💰 '+w.label+' points! Pick a consonant.');
+  canGuess=true; enableLetters(true); enableBuy();
+}
+function setWheelValue(t){document.getElementById('wheelValue').textContent=t;}
+
+// ---------- Guessing ----------
+function enableLetters(on){
+  document.querySelectorAll('.letter').forEach(b=>{
+    const l=b.dataset.letter;
+    b.disabled = !on || guessedLetters.has(l);
+  });
+}
+function enableBuy(){ document.getElementById('btnBuy').disabled = !(canGuess && lastWedge && lastWedge.value>0); }
+function enableMainButtons(){
+  document.getElementById('btnSpin').disabled=false;
+  document.getElementById('btnSolve').disabled=false;
+  document.getElementById('btnNew').disabled=false;
+}
+function disableMainButtons(){
+  document.getElementById('btnSpin').disabled=true;
+  document.getElementById('btnSolve').disabled=true;
+}
+function guessLetter(l){
+  if(!canGuess) return;
+  l=l.toUpperCase();
+  guessedLetters.add(l);
+  const isVowel=VOWELS.includes(l);
+  const count = puzzle.solution.split('').filter(c=>c===l).length;
+  for(let i=0;i<puzzle.solution.length;i++){
+    if(puzzle.solution[i]===l) puzzle.revealed[i]=true;
+  }
+  renderPuzzle();
+  const btn=document.querySelector(`.letter[data-letter="${l}"]`);
+  if(btn) btn.disabled=true;
+  if(count===0){
+    showMsg('❌ There is no "'+l+'". Turn passes.');
+    disableTurn();
+    nextPlayer();
+    return;
+  }
+  if(isVowel){
+    players[currentPlayer].score -= 10;
+    renderPlayers(); renderHeaderScores();
+    showMsg('✅ Vowel '+l+' is in the puzzle ('+count+'x). Score -10. Pick again or solve.');
+  } else {
+    const gain = lastWedge && lastWedge.value>0 ? lastWedge.value*count : 0;
+    players[currentPlayer].score += gain;
+    renderPlayers(); renderHeaderScores();
+    let m='✅ Consonant '+l+' is in the puzzle ('+count+'x). +'+gain+' points!';
+    if(freeSpin>0 && lastWedge && lastWedge.type==='free'){
+      m+=' 🎡 You get a FREE SPIN — spin again!';
+      showMsg(m);
+      freeSpin=0;
+      setTimeout(()=>spin(),600);
+      return;
+    }
+    showMsg(m);
+  }
+  if(isSolved()){
+    endRound(true); return;
+  }
+  canGuess=false;
+  enableLetters(false);
+  enableMainButtons();
+  document.getElementById('btnBuy').disabled=true;
+}
+function disableTurn(){
+  canGuess=false; lastWedge=null;
+  enableLetters(false);
+  document.getElementById('btnBuy').disabled=true;
+}
+function buyVowel(){
+  if(!canGuess || !lastWedge || lastWedge.value<=0) return;
+  if(players[currentPlayer].score<10){ showMsg('⚠️ You need at least 10 points to buy a vowel.'); return; }
+  const avail = VOWELS.filter(v=>puzzle.solution.includes(v) && !guessedLetters.has(v));
+  if(avail.length===0){ showMsg('⚠️ No vowels left to buy.'); return; }
+  const v=avail[Math.floor(Math.random()*avail.length)];
+  guessLetter(v);
+}
+
+// ---------- Solve ----------
+function openSolve(){
+  const guess=prompt('Type the full puzzle (no punctuation):');
+  if(guess===null) return;
+  const sol=puzzle.solution.replace(/\s+/g,'').toUpperCase();
+  const g=guess.replace(/\s+/g,'').toUpperCase();
+  if(g===sol){ endRound(true); }
+  else{ showMsg('❌ Wrong! Turn passes.'); disableTurn(); nextPlayer(); }
+}
+function endRound(win){
+  if(win){
+    let msg='🎉 '+players[currentPlayer].name+' solved the puzzle!';
+    if(players[currentPlayer].prizes.length>0) msg+=' Prizes: '+players[currentPlayer].prizes.join(', ')+'!';
+    if(lastWedge && lastWedge.type==='jackpot') msg+=' JACKPOT!';
+    showToast(msg);
+    triggerConfetti();
+    setTimeout(()=>{
+      const again=confirm('Round complete! '+msg+'\n\nContinue to the next round?');
+      if(again) nextRound();
+      else newGame();
+    },600);
+  } else {
+    showToast('❌ Failed to solve. Turn passes.');
+  }
+  for(let i=0;i<puzzle.solution.length;i++){
+    if(puzzle.solution[i]!==' ') puzzle.revealed[i]=true;
+  }
+  renderPuzzle();
+}
+function nextRound(){
+  round++;
+  puzzle=pickPuzzle();
+  guessedLetters.clear();
+  freeSpin=0;
+  setWheelValue('—');
+  buildLetterPad();
+  renderPuzzle();
+  showMsg('Round '+round+' begins! '+players[currentPlayer].name+' goes first.');
+  enableMainButtons();
+  document.getElementById('btnBuy').disabled=true;
+}
+function nextPlayer(){
+  setTimeout(()=>{
+    currentPlayer=(currentPlayer+1)%players.length;
+    renderPlayers();
+    showMsg('➡️ Turn: '+players[currentPlayer].name);
+    enableMainButtons();
+    document.getElementById('btnBuy').disabled=true;
+    setWheelValue('—');
+  },1400);
+}
+
+// ---------- UI ----------
+function buildLetterPad(){
+  const pad=document.getElementById('letterPad');
+  pad.innerHTML='';
+  ALL_LETTERS.forEach(l=>{
+    const b=document.createElement('button');
+    b.className='letter'; b.dataset.letter=l; b.textContent=l;
+    b.disabled=true;
+    b.onclick=()=>guessLetter(l);
+    pad.appendChild(b);
+  });
+}
+function renderPlayers(){
+  const tbody=document.getElementById('playerRows');
+  tbody.innerHTML='';
+  players.forEach((p,i)=>{
+    const tr=document.createElement('tr');
+    if(i===currentPlayer) tr.classList.add('active');
+    tr.innerHTML=`<td class="name">${p.name}</td><td>${p.score}</td><td>${p.lastWedge}</td><td class="bonus">${p.prizes.length?p.prizes.join(', '):'—'}</td>`;
+    tr.onclick=()=>{ if(!spinning) currentPlayer=i; renderPlayers(); };
+    tbody.appendChild(tr);
+  });
+}
+function renderHeaderScores(){
+  const el=document.getElementById('headerScores');
+  el.innerHTML='';
+  players.forEach(p=>{
+    const c=document.createElement('span');
+    c.className='score-chip';
+    c.innerHTML=`🎮 ${p.name}: <b>${p.score}</b>`;
+    el.appendChild(c);
+  });
+}
+function showMsg(m){ document.getElementById('message').textContent=m; }
+let toastTimer;
+function showToast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+function triggerConfetti(){
+  for(let i=0;i<60;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div');
+      c.className='confetti';
+      c.style.left=Math.random()*100+'vw';
+      c.style.background=['#ffd700','#e63946','#2a9d8f','#f4a261','#457bd9'][i%5];
+      c.style.animation=`fall ${1.5+Math.random()*1.5}s linear forwards`;
+      document.body.appendChild(c);
+      setTimeout(()=>c.remove(),3200);
+    }, i*40);
+  }
+}
+(function(){
+  const s=document.createElement('style');
+  s.textContent=`@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:1}}`;
+  document.head.appendChild(s);
+})();
+function newGame(){
+  document.getElementById('winModal').classList.add('hidden');
+  initPlayers();
+  round=1; freeSpin=0; guessedLetters.clear(); canGuess=false; spinning=false;
+  buildQueue();
+  puzzle=pickPuzzle();
+  setWheelValue('—');
+  buildLetterPad(); renderPuzzle();
+  showMsg('Welcome to WHEEL OF DREAMS! '+players[0].name+', press SPIN WHEEL to start.');
+  enableMainButtons(); document.getElementById('btnBuy').disabled=true;
+}
+
+// ---------- Boot ----------
+window.addEventListener('resize',()=>{resizeCanvas();drawWheel();});
+initPlayers();
+round=1; guessedLetters.clear();
+buildQueue();
+puzzle=pickPuzzle();
+buildLetterPad(); renderPuzzle();
+setWheelValue('—');
+showMsg('Welcome to WHEEL OF DREAMS! '+players[0].name+', press SPIN WHEEL to start.');
+enableMainButtons(); document.getElementById('btnBuy').disabled=true;
+resizeCanvas(); drawWheel();
+</script>
+</body>
+</html>
