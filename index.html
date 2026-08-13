@@ -353,11 +353,19 @@ function drawWheel(){
     else if(WEDGES[i].type==='bankrut') ctx.fillStyle='#b91c1c';
     ctx.fill(); ctx.strokeStyle='#0a1a3f'; ctx.lineWidth=2; ctx.stroke();
     const mid=start+step/2;
-    ctx.save(); ctx.translate(cx,cy); ctx.rotate(mid); ctx.translate(r*0.62,0);
-    ctx.rotate(Math.PI/2);
-    ctx.fillStyle='#fff'; ctx.font='bold '+(size*0.033)+'px Roboto';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(WEDGES[i].label,0,0);
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(mid);
+    ctx.fillStyle='#fff'; ctx.font='bold '+(size*0.036)+'px Roboto';
+    ctx.textBaseline='middle';
+    // Radial text: starts at the outer rim and runs inward toward the centre.
+    // Flip 180° on the left half so labels stay upright and readable.
+    if(Math.cos(mid)<0){
+      ctx.rotate(Math.PI);
+      ctx.textAlign='left';
+      ctx.fillText(WEDGES[i].label,-r*0.9,0);
+    }else{
+      ctx.textAlign='right';
+      ctx.fillText(WEDGES[i].label,r*0.9,0);
+    }
     ctx.restore();
   }
   ctx.beginPath(); ctx.arc(cx,cy,r*0.14,0,2*Math.PI); ctx.fillStyle='#ffd700'; ctx.fill();
